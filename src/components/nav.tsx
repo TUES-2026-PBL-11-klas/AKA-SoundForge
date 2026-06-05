@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function Nav() {
   const supabase = await createClient();
@@ -28,6 +29,7 @@ export async function Nav() {
 
         {user ? (
           <div className="flex items-center gap-1">
+            <ThemeToggle />
             <NavLink href="/" label="Home">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 11l9-8 9 8" />
@@ -55,12 +57,15 @@ export async function Nav() {
             </Link>
           </div>
         ) : (
-          <Link
-            href="/login"
-            className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
-          >
-            Sign in
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/login"
+              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
+            >
+              Sign in
+            </Link>
+          </div>
         )}
       </nav>
     </header>
