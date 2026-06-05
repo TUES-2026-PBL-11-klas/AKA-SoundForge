@@ -18,6 +18,12 @@ export default async function ProfilePage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  const { data: tracks } = await supabase
+    .from("tracks")
+    .select("id, prompt, genre, mood, audio_url, created_at")
+    .eq("creator_id", user.id)
+    .order("created_at", { ascending: false });
+
   if (!profile) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-sm text-zinc-500">
@@ -60,7 +66,7 @@ export default async function ProfilePage() {
 
       {/* Stats */}
       <div className="mt-8 flex gap-8 text-sm">
-        <Stat label="tracks" value={0} />
+        <Stat label="tracks" value={tracks?.length ?? 0} />
         <Stat label="followers" value={0} />
         <Stat label="following" value={0} />
       </div>
@@ -74,7 +80,7 @@ export default async function ProfilePage() {
 
       {/* Tabs */}
       <div className="mt-10">
-        <ProfileTabs />
+        <ProfileTabs tracks={tracks ?? []} />
       </div>
     </div>
   );

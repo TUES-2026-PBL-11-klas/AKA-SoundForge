@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { EmptyState } from "@/components/empty-state";
+import { CreateForm } from "@/components/create-form";
 
 export default async function CreatePage() {
   const supabase = await createClient();
@@ -11,11 +11,8 @@ export default async function CreatePage() {
   if (!user) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-16">
-      <EmptyState
-        title="Create a track"
-        description="Generation isn't wired up yet — coming soon."
-      />
+    <div className="mx-auto max-w-xl px-6 py-12">
+      <CreateForm />
     </div>
   );
 }

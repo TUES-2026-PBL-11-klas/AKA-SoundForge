@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { TracksList, type TrackRow } from "@/components/tracks-list";
 
 const TABS = [
   { id: "tracks", label: "Tracks", emptyTitle: "No tracks yet", emptyDesc: "Create your first track from the Create page." },
@@ -10,9 +11,16 @@ const TABS = [
   { id: "playlists", label: "Playlists", emptyTitle: "No playlists yet", emptyDesc: "Your playlists will show up here." },
 ] as const;
 
-export function ProfileTabs() {
+export function ProfileTabs({ tracks = [] }: { tracks?: TrackRow[] }) {
   const [active, setActive] = useState<(typeof TABS)[number]["id"]>("tracks");
   const current = TABS.find((t) => t.id === active)!;
+
+  const body =
+    active === "tracks" && tracks.length > 0 ? (
+      <TracksList tracks={tracks} />
+    ) : (
+      <EmptyState title={current.emptyTitle} description={current.emptyDesc} />
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -32,7 +40,7 @@ export function ProfileTabs() {
         ))}
       </div>
 
-      <EmptyState title={current.emptyTitle} description={current.emptyDesc} />
+      {body}
     </div>
   );
 }
