@@ -16,34 +16,43 @@ export async function POST(
 
   const { id: trackId } = await params;
 
-  // check if already liked
-  const { data: existing } = await supabase
-    .from("likes")
-    .select("track_id")
-    .eq("track_id", trackId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // read current count BEFORE mutating so we can compute the new value ourselves
+  // (avoids relying on trigger timing or a second count query)
+  const [{ data: existing }, { data: track }] = await Promise.all([
+    supabase
+      .from("likes")
+      .select("track_id")
+      .eq("track_id", trackId)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("tracks")
+      .select("like_count")
+      .eq("id", trackId)
+      .single(),
+  ]);
+
+  const currentCount = track?.like_count ?? 0;
 
   if (existing) {
-    // unlike
     await supabase
       .from("likes")
       .delete()
       .eq("track_id", trackId)
       .eq("user_id", user.id);
+
+    return NextResponse.json({
+      liked: false,
+      like_count: Math.max(0, currentCount - 1),
+    });
   } else {
-    // like
-    await supabase.from("likes").insert({ track_id: trackId, user_id: user.id });
+    await supabase
+      .from("likes")
+      .insert({ track_id: trackId, user_id: user.id });
+
+    return NextResponse.json({
+      liked: true,
+      like_count: currentCount + 1,
+    });
   }
-
-  const { data: track } = await supabase
-    .from("tracks")
-    .select("like_count")
-    .eq("id", trackId)
-    .single();
-
-  return NextResponse.json({
-    liked: !existing,
-    like_count: track?.like_count ?? 0,
-  });
 }

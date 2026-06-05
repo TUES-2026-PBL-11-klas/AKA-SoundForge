@@ -1,30 +1,190 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CommentsDrawer } from "@/components/comments-drawer";
 import type { FeedTrack } from "@/app/api/feed/route";
 
-// animated waveform bars using pure CSS
-function Waveform({ playing }: { playing: boolean }) {
+// ─── Disc palettes — deterministic from track id ─────────────────────────────
+const DISC_PALETTES: [string, string][] = [
+  ["#22d3ee", "#6366f1"],
+  ["#f59e0b", "#ef4444"],
+  ["#10b981", "#3b82f6"],
+  ["#ec4899", "#8b5cf6"],
+  ["#f97316", "#eab308"],
+  ["#06b6d4", "#8b5cf6"],
+  ["#a78bfa", "#ec4899"],
+  ["#34d399", "#60a5fa"],
+  ["#fb7185", "#fbbf24"],
+  ["#818cf8", "#34d399"],
+];
+
+function discColors(id: string): [string, string] {
+  const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return DISC_PALETTES[hash % DISC_PALETTES.length];
+}
+
+// ─── Spinning vinyl disc ──────────────────────────────────────────────────────
+function Disc({ playing, trackId }: { playing: boolean; trackId: string }) {
+  const [c1, c2] = discColors(trackId);
+  const size = 240;
+
   return (
-    <div className="flex items-end gap-[3px] h-10">
-      {Array.from({ length: 28 }).map((_, i) => (
+    <div style={{ position: "relative", width: size, height: size }}>
+      {/* glow behind disc */}
+      <div
+        style={{
+          position: "absolute",
+          inset: -32,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${c1}55 0%, ${c2}33 50%, transparent 70%)`,
+          filter: "blur(24px)",
+          opacity: playing ? 1 : 0.35,
+          transform: `scale(${playing ? 1.15 : 1})`,
+          transition: "opacity 0.7s, transform 0.7s",
+        }}
+      />
+
+      {/* spinning part */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          animation: "discSpin 4s linear infinite",
+          animationPlayState: playing ? "running" : "paused",
+        }}
+      >
+        {/* vinyl body */}
         <div
-          key={i}
-          className="w-[3px] rounded-full bg-white/70"
           style={{
-            height: `${20 + Math.sin(i * 0.8) * 14}px`,
-            animation: playing
-              ? `waveBar 0.${6 + (i % 4)}s ease-in-out infinite alternate`
-              : "none",
-            animationDelay: `${(i * 0.05).toFixed(2)}s`,
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            background: "linear-gradient(145deg, #1c1c2e 0%, #0d0d1a 100%)",
           }}
         />
-      ))}
+
+        {/* groove rings */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            background: `repeating-radial-gradient(
+              circle at center,
+              transparent 0px,
+              transparent 5px,
+              rgba(255,255,255,0.035) 5px,
+              rgba(255,255,255,0.035) 6px
+            )`,
+          }}
+        />
+
+        {/* center label */}
+        <div
+          style={{
+            position: "absolute",
+            inset: "28%",
+            borderRadius: "50%",
+            background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+            boxShadow: `0 0 24px ${c1}88`,
+          }}
+        />
+
+        {/* center hole */}
+        <div
+          style={{
+            position: "absolute",
+            width: 14,
+            height: 14,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            borderRadius: "50%",
+            background: "#060608",
+            boxShadow: "inset 0 0 4px rgba(0,0,0,0.9)",
+          }}
+        />
+      </div>
+
+      {/* static shine — doesn't spin */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 35% 28%, rgba(255,255,255,0.13) 0%, transparent 55%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* outer ring border */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.07), 0 0 0 1px rgba(0,0,0,0.5)`,
+          pointerEvents: "none",
+        }}
+      />
     </div>
   );
 }
 
+// ─── Small waveform below disc ────────────────────────────────────────────────
+const BAR_COUNT = 36;
+const BAR_HEIGHTS = Array.from({ length: BAR_COUNT }, (_, i) =>
+  Math.max(4, Math.round(
+    12 + Math.sin(i * 0.6) * 8 + Math.sin(i * 1.4) * 5
+  ))
+);
+
+function Waveform({ playing }: { playing: boolean }) {
+  return (
+    <div className="flex flex-col gap-[2px]">
+      <div className="flex items-end justify-center gap-[2px]" style={{ height: 28 }}>
+        {BAR_HEIGHTS.map((h, i) => (
+          <div
+            key={i}
+            style={{
+              width: 2.5,
+              height: h,
+              borderRadius: 2,
+              background: "linear-gradient(to top, #22d3ee, #a78bfa)",
+              boxShadow: playing ? "0 0 4px #22d3eeaa" : "none",
+              animation: playing
+                ? `waveBar 0.${5 + (i % 6)}s ease-in-out ${(i * 0.04).toFixed(2)}s infinite alternate`
+                : "none",
+              transition: "box-shadow 0.4s",
+            }}
+          />
+        ))}
+      </div>
+      {/* reflection */}
+      <div
+        className="flex items-start justify-center gap-[2px]"
+        style={{ height: 10, transform: "scaleY(-1)", opacity: 0.15 }}
+      >
+        {BAR_HEIGHTS.map((h, i) => (
+          <div
+            key={i}
+            style={{
+              width: 2.5,
+              height: Math.round(h * 0.5),
+              borderRadius: 2,
+              background: "linear-gradient(to top, #22d3ee, #a78bfa)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 function HeartIcon({ filled }: { filled: boolean }) {
   return filled ? (
     <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7">
@@ -45,23 +205,7 @@ function CommentIcon() {
   );
 }
 
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-10 w-10">
-      <polygon points="5,3 19,12 5,21" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-10 w-10">
-      <rect x="6" y="4" width="4" height="16" />
-      <rect x="14" y="4" width="4" height="16" />
-    </svg>
-  );
-}
-
+// ─── Card ─────────────────────────────────────────────────────────────────────
 export function FeedCard({ track }: { track: FeedTrack }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -71,23 +215,17 @@ export function FeedCard({ track }: { track: FeedTrack }) {
   const [commentCount, setCommentCount] = useState(track.comment_count);
   const [commentsOpen, setCommentsOpen] = useState(false);
 
-  // auto-play/pause via IntersectionObserver
   useEffect(() => {
     const card = cardRef.current;
     const audio = audioRef.current;
     if (!card || !audio) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          audio.play().catch(() => {});
-        } else {
-          audio.pause();
-        }
+        if (entry.isIntersecting) audio.play().catch(() => {});
+        else audio.pause();
       },
       { threshold: 0.7 }
     );
-
     observer.observe(card);
     return () => observer.disconnect();
   }, []);
@@ -95,19 +233,13 @@ export function FeedCard({ track }: { track: FeedTrack }) {
   function togglePlay() {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) {
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
-    }
+    audio.paused ? audio.play().catch(() => {}) : audio.pause();
   }
 
   async function toggleLike() {
     const wasLiked = liked;
-    // optimistic update
     setLiked(!wasLiked);
     setLikeCount((n) => (wasLiked ? Math.max(0, n - 1) : n + 1));
-
     try {
       const res = await fetch(`/api/tracks/${track.id}/like`, { method: "POST" });
       if (res.ok) {
@@ -115,7 +247,6 @@ export function FeedCard({ track }: { track: FeedTrack }) {
         setLiked(data.liked);
         setLikeCount(data.like_count);
       } else {
-        // rollback
         setLiked(wasLiked);
         setLikeCount((n) => (wasLiked ? n + 1 : Math.max(0, n - 1)));
       }
@@ -131,21 +262,15 @@ export function FeedCard({ track }: { track: FeedTrack }) {
   return (
     <div
       ref={cardRef}
-      className="relative flex h-[calc(100vh-3.5rem)] w-full snap-start flex-col items-center justify-center overflow-hidden bg-zinc-950"
+      className="relative flex h-[calc(100vh-3.5rem)] w-full snap-start flex-col overflow-hidden bg-zinc-950"
     >
-      {/* background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-zinc-950" />
+      {/* background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black" />
 
-      {/* genre color accent */}
-      {track.genre && (
-        <div className="absolute inset-0 opacity-20"
-          style={{ background: genreGradient(track.genre) }} />
-      )}
+      {/* bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-black/95 to-transparent" />
 
-      {/* bottom fade for readability */}
-      <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black/80 to-transparent" />
-
-      {/* audio element */}
+      {/* audio */}
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio
         ref={audioRef}
@@ -155,50 +280,56 @@ export function FeedCard({ track }: { track: FeedTrack }) {
         onPause={() => setPlaying(false)}
       />
 
-      {/* play/pause tap zone (center) */}
+      {/* tap whole card to play/pause */}
       <button
         onClick={togglePlay}
         aria-label={playing ? "Pause" : "Play"}
-        className="absolute inset-0 z-10 flex items-center justify-center"
-      >
-        <div
-          className={`text-white/80 transition-opacity duration-200 ${
-            playing ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          {playing ? <PauseIcon /> : <PlayIcon />}
-        </div>
-      </button>
+        className="absolute inset-0 z-10"
+      />
 
-      {/* bottom info */}
-      <div className="absolute bottom-24 left-4 right-16 z-20 flex flex-col gap-2">
+      {/* disc + waveform — centered (pointer-events-none so taps fall through to the play button) */}
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-[55%] flex-col items-center gap-6">
+        <Disc playing={playing} trackId={track.id} />
         <Waveform playing={playing} />
-        <p className="line-clamp-2 text-sm font-medium text-white">{track.prompt}</p>
-        <div className="flex items-center gap-2">
-          {creator.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={creator.avatar_url}
-              alt={creatorName}
-              className="h-6 w-6 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-600 text-[10px] font-bold text-white">
-              {creatorName.slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          <span className="text-xs font-semibold text-white/90">@{creator.username}</span>
+      </div>
+
+      {/* bottom-left: track info */}
+      <div className="absolute bottom-10 left-4 right-16 z-20 flex flex-col gap-2">
+        <p className="line-clamp-2 text-sm font-semibold text-white drop-shadow">
+          {track.prompt}
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={`/u/${creator.username}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2"
+          >
+            {creator.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={creator.avatar_url}
+                alt={creatorName}
+                className="h-6 w-6 rounded-full object-cover ring-1 ring-white/30"
+              />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-600 text-[10px] font-bold text-white ring-1 ring-white/30">
+                {creatorName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs font-semibold text-white/90 hover:text-white">
+              @{creator.username}
+            </span>
+          </Link>
           {(track.genre || track.mood) && (
-            <span className="text-xs text-white/60">
+            <span className="rounded-full border border-white/20 px-2 py-0.5 text-[10px] text-white/60">
               {[track.genre, track.mood].filter(Boolean).join(" · ")}
             </span>
           )}
         </div>
       </div>
 
-      {/* right action buttons */}
-      <div className="absolute bottom-24 right-3 z-20 flex flex-col items-center gap-6">
-        {/* like */}
+      {/* right: action buttons */}
+      <div className="absolute bottom-10 right-3 z-20 flex flex-col items-center gap-6">
         <button
           onClick={(e) => { e.stopPropagation(); toggleLike(); }}
           className="flex flex-col items-center gap-1"
@@ -210,7 +341,6 @@ export function FeedCard({ track }: { track: FeedTrack }) {
           <span className="text-xs font-semibold text-white">{likeCount}</span>
         </button>
 
-        {/* comment */}
         <button
           onClick={(e) => { e.stopPropagation(); setCommentsOpen(true); }}
           className="flex flex-col items-center gap-1 text-white"
@@ -225,29 +355,10 @@ export function FeedCard({ track }: { track: FeedTrack }) {
         trackId={track.id}
         isOpen={commentsOpen}
         onClose={() => setCommentsOpen(false)}
+        onCommentPosted={() => setCommentCount((n) => n + 1)}
+        onCommentDeleted={() => setCommentCount((n) => Math.max(0, n - 1))}
+        onCountSync={(n) => setCommentCount(n)}
       />
-
-      {/* waveform keyframes injected once globally */}
-      <style>{`
-        @keyframes waveBar {
-          from { transform: scaleY(0.4); }
-          to   { transform: scaleY(1); }
-        }
-      `}</style>
     </div>
   );
-}
-
-function genreGradient(genre: string): string {
-  const map: Record<string, string> = {
-    "Lo-fi": "linear-gradient(135deg, #6366f1, #a78bfa)",
-    "House": "linear-gradient(135deg, #f59e0b, #ef4444)",
-    "Techno": "linear-gradient(135deg, #06b6d4, #6366f1)",
-    "Jazz": "linear-gradient(135deg, #d97706, #b45309)",
-    "Classical": "linear-gradient(135deg, #8b5cf6, #ec4899)",
-    "Hip-Hop": "linear-gradient(135deg, #10b981, #3b82f6)",
-    "Pop": "linear-gradient(135deg, #ec4899, #f43f5e)",
-    "Ambient": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-  };
-  return map[genre] ?? "linear-gradient(135deg, #52525b, #27272a)";
 }
