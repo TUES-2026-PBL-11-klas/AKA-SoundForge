@@ -46,6 +46,8 @@ export function CommentsDrawer({
 
   useEffect(() => {
     if (!isOpen) return;
+    // Fetch on open; loading flag is local UI state synced to a remote fetch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetch(`/api/tracks/${trackId}/comments`)
       .then((r) => r.json())

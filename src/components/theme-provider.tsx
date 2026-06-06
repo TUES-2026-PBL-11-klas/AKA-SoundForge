@@ -17,7 +17,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
 
   useEffect(() => {
+    // Sync with localStorage on mount (external store; can't read in SSR initializer)
     const stored = localStorage.getItem("theme") as Theme | null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setThemeState(stored ?? "system");
   }, []);
 
