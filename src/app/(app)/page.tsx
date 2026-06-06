@@ -30,7 +30,7 @@ export default async function HomePage() {
   const { data: rawTracks } = await supabase
     .from("tracks")
     .select(
-      `id, prompt, genre, mood, audio_url, duration_seconds,
+      `id, prompt, genre, mood, audio_url, cover_url, duration_seconds,
        like_count, comment_count, created_at,
        creator:profiles!tracks_creator_id_fkey(id, username, display_name, avatar_url)`
     )
@@ -56,6 +56,7 @@ export default async function HomePage() {
     genre: t.genre,
     mood: t.mood,
     audio_url: t.audio_url,
+    cover_url: t.cover_url ?? null,
     duration_seconds: t.duration_seconds,
     like_count: t.like_count ?? 0,
     comment_count: t.comment_count ?? 0,

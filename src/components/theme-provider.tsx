@@ -25,10 +25,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
+      root.classList.remove("light");
     } else if (theme === "light") {
+      root.classList.add("light");
       root.classList.remove("dark");
     } else {
-      // system
+      // system — remove both explicit overrides, let media query win
+      root.classList.remove("dark", "light");
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       root.classList.toggle("dark", prefersDark);
     }

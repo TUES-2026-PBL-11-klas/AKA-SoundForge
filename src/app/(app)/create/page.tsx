@@ -12,7 +12,7 @@ export default async function CreatePage() {
 
   return (
     <div className="mx-auto max-w-xl px-6 py-12">
-      <CreateForm />
+      <CreateForm userId={user.id} />
     </div>
   );
 }

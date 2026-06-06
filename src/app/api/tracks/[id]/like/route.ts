@@ -16,23 +16,12 @@ export async function POST(
 
   const { id: trackId } = await params;
 
-  // read current count BEFORE mutating so we can compute the new value ourselves
-  // (avoids relying on trigger timing or a second count query)
-  const [{ data: existing }, { data: track }] = await Promise.all([
-    supabase
-      .from("likes")
-      .select("track_id")
-      .eq("track_id", trackId)
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("tracks")
-      .select("like_count")
-      .eq("id", trackId)
-      .single(),
-  ]);
-
-  const currentCount = track?.like_count ?? 0;
+  const { data: existing } = await supabase
+    .from("likes")
+    .select("track_id")
+    .eq("track_id", trackId)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
   if (existing) {
     await supabase
@@ -40,19 +29,26 @@ export async function POST(
       .delete()
       .eq("track_id", trackId)
       .eq("user_id", user.id);
-
-    return NextResponse.json({
-      liked: false,
-      like_count: Math.max(0, currentCount - 1),
-    });
   } else {
     await supabase
       .from("likes")
       .insert({ track_id: trackId, user_id: user.id });
-
-    return NextResponse.json({
-      liked: true,
-      like_count: currentCount + 1,
-    });
   }
+
+  // Count from the source table so the returned value is always correct,
+  // regardless of whether the denormalized trigger is in place.
+  const { count } = await supabase
+    .from("likes")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId);
+
+  const like_count = count ?? 0;
+
+  // Keep the denormalized column in sync.
+  await supabase
+    .from("tracks")
+    .update({ like_count })
+    .eq("id", trackId);
+
+  return NextResponse.json({ liked: !existing, like_count });
 }

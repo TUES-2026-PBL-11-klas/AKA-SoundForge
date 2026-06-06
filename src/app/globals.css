@@ -1,7 +1,67 @@
 @import "tailwindcss";
 
-/* class-based dark mode for Tailwind v4 */
-@custom-variant dark (&:is(.dark, .dark *));
+/*
+  Tailwind v4 with Turbopack compiles dark: utilities using @media (prefers-color-scheme: dark).
+  We bridge the class-based toggle by adding overrides inside both media queries:
+  - Inside "light" media: .dark class forces dark styles on
+  - Inside "dark" media:  .light class forces dark styles off
+  This covers all four combinations of system preference × user toggle.
+*/
+@layer utilities {
+  /* ── Force dark when .dark class is set but system is LIGHT ─────────────── */
+  @media (prefers-color-scheme: light) {
+    html.dark .dark\:bg-zinc-100        { background-color: var(--color-zinc-100); }
+    html.dark .dark\:bg-zinc-600        { background-color: var(--color-zinc-600); }
+    html.dark .dark\:bg-zinc-700        { background-color: var(--color-zinc-700); }
+    html.dark .dark\:bg-zinc-800        { background-color: var(--color-zinc-800); }
+    html.dark .dark\:bg-zinc-900        { background-color: var(--color-zinc-900); }
+    html.dark .dark\:bg-zinc-950        { background-color: var(--color-zinc-950); }
+    html.dark .dark\:bg-zinc-950\/80    { background-color: color-mix(in srgb, var(--color-zinc-950) 80%, transparent); }
+    html.dark .dark\:border-zinc-100    { border-color: var(--color-zinc-100); }
+    html.dark .dark\:border-zinc-700    { border-color: var(--color-zinc-700); }
+    html.dark .dark\:border-zinc-800    { border-color: var(--color-zinc-800); }
+    html.dark :where(.dark\:divide-zinc-800 > :not(:last-child)) { border-color: var(--color-zinc-800); }
+    html.dark .dark\:text-zinc-100      { color: var(--color-zinc-100); }
+    html.dark .dark\:text-zinc-300      { color: var(--color-zinc-300); }
+    html.dark .dark\:text-zinc-400      { color: var(--color-zinc-400); }
+    html.dark .dark\:text-zinc-900      { color: var(--color-zinc-900); }
+    html.dark .dark\:hover\:bg-zinc-800:hover    { background-color: var(--color-zinc-800); }
+    html.dark .dark\:hover\:bg-zinc-900:hover    { background-color: var(--color-zinc-900); }
+    html.dark .dark\:hover\:border-zinc-600:hover { border-color: var(--color-zinc-600); }
+    html.dark .dark\:hover\:text-zinc-100:hover  { color: var(--color-zinc-100); }
+    html.dark .dark\:hover\:text-zinc-200:hover  { color: var(--color-zinc-200); }
+    html.dark .dark\:hover\:text-zinc-300:hover  { color: var(--color-zinc-300); }
+    html.dark .dark\:focus\:border-zinc-500:focus { border-color: var(--color-zinc-500); }
+    html.dark .dark\:focus\:ring-zinc-100:focus   { --tw-ring-color: var(--color-zinc-100); }
+  }
+
+  /* ── Force light when .light class is set but system is DARK ────────────── */
+  @media (prefers-color-scheme: dark) {
+    html.light .dark\:bg-zinc-100        { background-color: initial; }
+    html.light .dark\:bg-zinc-600        { background-color: initial; }
+    html.light .dark\:bg-zinc-700        { background-color: initial; }
+    html.light .dark\:bg-zinc-800        { background-color: initial; }
+    html.light .dark\:bg-zinc-900        { background-color: initial; }
+    html.light .dark\:bg-zinc-950        { background-color: initial; }
+    html.light .dark\:bg-zinc-950\/80    { background-color: initial; }
+    html.light .dark\:border-zinc-100    { border-color: initial; }
+    html.light .dark\:border-zinc-700    { border-color: initial; }
+    html.light .dark\:border-zinc-800    { border-color: initial; }
+    html.light :where(.dark\:divide-zinc-800 > :not(:last-child)) { border-color: initial; }
+    html.light .dark\:text-zinc-100      { color: initial; }
+    html.light .dark\:text-zinc-300      { color: initial; }
+    html.light .dark\:text-zinc-400      { color: initial; }
+    html.light .dark\:text-zinc-900      { color: initial; }
+    html.light .dark\:hover\:bg-zinc-800:hover    { background-color: initial; }
+    html.light .dark\:hover\:bg-zinc-900:hover    { background-color: initial; }
+    html.light .dark\:hover\:border-zinc-600:hover { border-color: initial; }
+    html.light .dark\:hover\:text-zinc-100:hover  { color: initial; }
+    html.light .dark\:hover\:text-zinc-200:hover  { color: initial; }
+    html.light .dark\:hover\:text-zinc-300:hover  { color: initial; }
+    html.light .dark\:focus\:border-zinc-500:focus { border-color: initial; }
+    html.light .dark\:focus\:ring-zinc-100:focus   { --tw-ring-color: initial; }
+  }
+}
 
 :root {
   --background: #ffffff;

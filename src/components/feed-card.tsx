@@ -25,7 +25,7 @@ function discColors(id: string): [string, string] {
 }
 
 // ─── Spinning vinyl disc ──────────────────────────────────────────────────────
-function Disc({ playing, trackId }: { playing: boolean; trackId: string }) {
+function Disc({ playing, trackId, coverUrl }: { playing: boolean; trackId: string; coverUrl?: string | null }) {
   const [c1, c2] = discColors(trackId);
   const size = 240;
 
@@ -82,15 +82,30 @@ function Disc({ playing, trackId }: { playing: boolean; trackId: string }) {
         />
 
         {/* center label */}
-        <div
-          style={{
-            position: "absolute",
-            inset: "28%",
-            borderRadius: "50%",
-            background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
-            boxShadow: `0 0 24px ${c1}88`,
-          }}
-        />
+        {coverUrl ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: "28%",
+              borderRadius: "50%",
+              overflow: "hidden",
+              boxShadow: `0 0 24px ${c1}88`,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+        ) : (
+          <div
+            style={{
+              position: "absolute",
+              inset: "28%",
+              borderRadius: "50%",
+              background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+              boxShadow: `0 0 24px ${c1}88`,
+            }}
+          />
+        )}
 
         {/* center hole */}
         <div
@@ -289,7 +304,7 @@ export function FeedCard({ track }: { track: FeedTrack }) {
 
       {/* disc + waveform — centered (pointer-events-none so taps fall through to the play button) */}
       <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 flex -translate-y-[55%] flex-col items-center gap-6">
-        <Disc playing={playing} trackId={track.id} />
+        <Disc playing={playing} trackId={track.id} coverUrl={track.cover_url} />
         <Waveform playing={playing} />
       </div>
 

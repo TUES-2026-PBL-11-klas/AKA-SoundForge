@@ -89,6 +89,16 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Keep comment_count accurate regardless of trigger state.
+  const { count } = await supabase
+    .from("comments")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId);
+  await supabase
+    .from("tracks")
+    .update({ comment_count: count ?? 0 })
+    .eq("id", trackId);
+
   const result: CommentRow = {
     id: comment.id,
     body: comment.body,
