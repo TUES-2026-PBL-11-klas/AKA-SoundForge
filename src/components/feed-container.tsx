@@ -12,6 +12,7 @@ export function FeedContainer({ initial }: { initial: FeedTrack[] }) {
   const [unlocked, setUnlocked] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const arrowCooldown = useRef(false);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -28,6 +29,23 @@ export function FeedContainer({ initial }: { initial: FeedTrack[] }) {
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tracks, loading, exhausted]);
+
+  // Arrow key navigation — window-level so it works regardless of focus
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const el = scrollRef.current;
+      if (!el || arrowCooldown.current) return;
+      e.preventDefault();
+      const dir = e.key === "ArrowDown" ? 1 : -1;
+      el.scrollBy({ top: dir * el.clientHeight, behavior: "smooth" });
+      arrowCooldown.current = true;
+      setTimeout(() => { arrowCooldown.current = false; }, 650);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
 
   async function loadMore() {
     if (loading || exhausted) return;
