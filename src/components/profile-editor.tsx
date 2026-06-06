@@ -13,7 +13,6 @@ type Profile = {
 };
 
 export function ProfileEditor({ profile }: { profile: Profile }) {
-  const supabase = createClient();
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
@@ -29,6 +28,7 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
     setUploading(true);
     setError(null);
 
+    const supabase = createClient();
     const ext = file.name.split(".").pop();
     const path = `${profile.id}/avatar-${Date.now()}.${ext}`;
 
@@ -62,6 +62,7 @@ export function ProfileEditor({ profile }: { profile: Profile }) {
     setSaving(true);
     setError(null);
 
+    const supabase = createClient();
     const { error } = await supabase
       .from("profiles")
       .update({
