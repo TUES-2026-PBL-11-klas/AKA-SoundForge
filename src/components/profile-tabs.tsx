@@ -3,24 +3,53 @@
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { TracksList, type TrackRow } from "@/components/tracks-list";
+import { PlaylistsPanel, type PlaylistRow } from "@/components/playlists-panel";
 
 const TABS = [
-  { id: "tracks", label: "Tracks", emptyTitle: "No tracks yet", emptyDesc: "Create your first track from the Create page." },
-  { id: "remixes", label: "Remixes", emptyTitle: "No remixes yet", emptyDesc: "Remixes you make will show up here." },
-  { id: "liked", label: "Liked", emptyTitle: "Nothing liked yet", emptyDesc: "Tracks you like will show up here." },
-  { id: "playlists", label: "Playlists", emptyTitle: "No playlists yet", emptyDesc: "Your playlists will show up here." },
+  { id: "tracks",    label: "Tracks" },
+  { id: "remixes",   label: "Remixes" },
+  { id: "liked",     label: "Liked" },
+  { id: "playlists", label: "Playlists" },
 ] as const;
 
-export function ProfileTabs({ tracks = [] }: { tracks?: TrackRow[] }) {
-  const [active, setActive] = useState<(typeof TABS)[number]["id"]>("tracks");
-  const current = TABS.find((t) => t.id === active)!;
+type TabId = (typeof TABS)[number]["id"];
 
-  const body =
-    active === "tracks" && tracks.length > 0 ? (
-      <TracksList tracks={tracks} />
-    ) : (
-      <EmptyState title={current.emptyTitle} description={current.emptyDesc} />
-    );
+export function ProfileTabs({
+  tracks = [],
+  likedTracks = [],
+  likedIds = [],
+  playlists = [],
+  userId,
+}: {
+  tracks?: TrackRow[];
+  likedTracks?: TrackRow[];
+  likedIds?: string[];
+  playlists?: PlaylistRow[];
+  userId?: string;
+}) {
+  const [active, setActive] = useState<TabId>("tracks");
+
+  let body: React.ReactNode;
+
+  if (active === "tracks") {
+    body =
+      tracks.length > 0 ? (
+        <TracksList tracks={tracks} likedIds={likedIds} userId={userId} canEditCovers />
+      ) : (
+        <EmptyState title="No tracks yet" description="Create your first track from the Create page." />
+      );
+  } else if (active === "liked") {
+    body =
+      likedTracks.length > 0 ? (
+        <TracksList tracks={likedTracks} likedIds={likedIds} userId={userId} />
+      ) : (
+        <EmptyState title="Nothing liked yet" description="Tracks you like will show up here." />
+      );
+  } else if (active === "playlists") {
+    body = <PlaylistsPanel playlists={playlists} userId={userId ?? ""} />;
+  } else {
+    body = <EmptyState title="No remixes yet" description="Remixes you make will show up here." />;
+  }
 
   return (
     <div className="flex flex-col gap-4">

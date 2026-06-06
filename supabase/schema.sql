@@ -168,3 +168,50 @@ $$;
 create trigger trg_comment_count
   after insert or delete on public.comments
   for each row execute function public.update_comment_count();
+
+-- playlists
+create table public.playlists (
+  id uuid primary key default gen_random_uuid(),
+  creator_id uuid not null references public.profiles(id) on delete cascade,
+  name text not null,
+  cover_url text,
+  created_at timestamptz default now()
+);
+
+alter table public.playlists enable row level security;
+
+create policy "playlists are viewable by everyone"
+  on public.playlists for select using (true);
+
+create policy "users can create playlists"
+  on public.playlists for insert with check (auth.uid() = creator_id);
+
+create policy "users can update their own playlists"
+  on public.playlists for update using (auth.uid() = creator_id);
+
+create policy "users can delete their own playlists"
+  on public.playlists for delete using (auth.uid() = creator_id);
+
+-- playlist_tracks join table
+create table public.playlist_tracks (
+  playlist_id uuid not null references public.playlists(id) on delete cascade,
+  track_id uuid not null references public.tracks(id) on delete cascade,
+  position int not null default 0,
+  added_at timestamptz default now(),
+  primary key (playlist_id, track_id)
+);
+
+alter table public.playlist_tracks enable row level security;
+
+create policy "playlist tracks are viewable by everyone"
+  on public.playlist_tracks for select using (true);
+
+create policy "playlist owners can add tracks"
+  on public.playlist_tracks for insert with check (
+    auth.uid() = (select creator_id from public.playlists where id = playlist_id)
+  );
+
+create policy "playlist owners can remove tracks"
+  on public.playlist_tracks for delete using (
+    auth.uid() = (select creator_id from public.playlists where id = playlist_id)
+  );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const GENRES = [
   "Lo-fi",
@@ -25,16 +26,26 @@ const DURATIONS = [
   { value: 60, label: "1m" },
 ];
 
-export function CreateForm() {
+export function CreateForm({ userId }: { userId: string }) {
   const router = useRouter();
+  const supabase = createClient();
   const [prompt, setPrompt] = useState("");
   const [genre, setGenre] = useState("");
   const [genreOther, setGenreOther] = useState("");
   const [moods, setMoods] = useState<string[]>([]);
   const [hasVocals, setHasVocals] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState<number>(60);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
 
   function toggleMood(m: string) {
     setMoods((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
@@ -65,6 +76,20 @@ export function CreateForm() {
         const { error } = await res.json().catch(() => ({ error: "request failed" }));
         setLoading(false);
         return setError(error || `request failed (${res.status})`);
+      }
+
+      const { id: trackId } = await res.json();
+
+      if (coverFile && trackId) {
+        const ext = coverFile.name.split(".").pop();
+        const path = `${userId}/track-cover-${trackId}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("avatars")
+          .upload(path, coverFile, { upsert: true });
+        if (!uploadErr) {
+          const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+          await supabase.from("tracks").update({ cover_url: pub.publicUrl }).eq("id", trackId);
+        }
       }
 
       router.push("/profile");
@@ -183,6 +208,23 @@ export function CreateForm() {
           className="h-4 w-4"
         />
       </label>
+
+      {/* Cover image */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-zinc-600 dark:text-zinc-400">Cover image <span className="text-zinc-400">(optional)</span></span>
+        <div className="flex items-center gap-4">
+          {coverPreview && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverPreview} alt="" className="h-14 w-14 rounded-lg object-cover flex-shrink-0" />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleCoverChange}
+            className="text-xs text-zinc-600 dark:text-zinc-400"
+          />
+        </div>
+      </div>
 
       {error && <div className="text-xs text-red-600">{error}</div>}
 

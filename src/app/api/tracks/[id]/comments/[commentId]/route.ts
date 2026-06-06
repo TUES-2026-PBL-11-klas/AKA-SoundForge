@@ -14,17 +14,27 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { commentId } = await params;
+  const { id: trackId, commentId } = await params;
 
   const { error } = await supabase
     .from("comments")
     .delete()
     .eq("id", commentId)
-    .eq("user_id", user.id); // RLS + ownership check
+    .eq("user_id", user.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Keep comment_count accurate regardless of trigger state.
+  const { count } = await supabase
+    .from("comments")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId);
+  await supabase
+    .from("tracks")
+    .update({ comment_count: count ?? 0 })
+    .eq("id", trackId);
 
   return new NextResponse(null, { status: 204 });
 }
