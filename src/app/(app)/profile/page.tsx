@@ -20,7 +20,26 @@ export default async function ProfilePage() {
 
   const { data: tracks } = await supabase
     .from("tracks")
-    .select("id, prompt, genre, mood, audio_url, created_at")
+    .select("id, prompt, genre, mood, audio_url, cover_url, created_at")
+    .eq("creator_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const { data: likedRows } = await supabase
+    .from("likes")
+    .select("track:tracks(id, prompt, genre, mood, audio_url, cover_url, created_at)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const likedTracks = (likedRows ?? [])
+    .map((r) => r.track)
+    .filter((t): t is NonNullable<typeof t> => t != null)
+    .map((t) => ({ ...t, created_at: t.created_at ?? "" }));
+
+  const likedIds = likedTracks.map((t) => t.id);
+
+  const { data: playlists } = await supabase
+    .from("playlists")
+    .select("id, name, cover_url, created_at")
     .eq("creator_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -67,8 +86,8 @@ export default async function ProfilePage() {
       {/* Stats */}
       <div className="mt-8 flex gap-8 text-sm">
         <Stat label="tracks" value={tracks?.length ?? 0} />
-        <Stat label="followers" value={0} />
-        <Stat label="following" value={0} />
+        <Stat label="liked" value={likedTracks.length} />
+        <Stat label="playlists" value={playlists?.length ?? 0} />
       </div>
 
       {/* Bio */}
@@ -80,7 +99,13 @@ export default async function ProfilePage() {
 
       {/* Tabs */}
       <div className="mt-10">
-        <ProfileTabs tracks={tracks ?? []} />
+        <ProfileTabs
+          tracks={tracks ?? []}
+          likedTracks={likedTracks}
+          likedIds={likedIds}
+          playlists={playlists ?? []}
+          userId={user.id}
+        />
       </div>
     </div>
   );
