@@ -170,7 +170,7 @@ export function TracksList({
                 </button>
               )}
             </div>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            { }
             <audio controls src={t.audio_url} className="w-full" />
           </article>
         );

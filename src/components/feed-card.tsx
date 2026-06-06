@@ -286,7 +286,7 @@ export function FeedCard({ track }: { track: FeedTrack }) {
       <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-black/95 to-transparent" />
 
       {/* audio */}
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      { }
       <audio
         ref={audioRef}
         src={track.audio_url}

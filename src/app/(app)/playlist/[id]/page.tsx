@@ -23,6 +23,16 @@ export default async function PlaylistPage({
 
   if (!playlist) notFound();
 
+  type PlaylistTrack = {
+    id: string;
+    prompt: string;
+    genre: string | null;
+    mood: string | null;
+    audio_url: string;
+    cover_url: string | null;
+    created_at: string;
+  };
+
   // tracks already in this playlist
   const { data: playlistTrackRows } = await supabase
     .from("playlist_tracks")
@@ -30,10 +40,9 @@ export default async function PlaylistPage({
     .eq("playlist_id", id)
     .order("position", { ascending: true });
 
-  const playlistTracks = (playlistTrackRows ?? [])
-    .map((r) => r.track)
-    .filter((t): t is NonNullable<typeof t> => t != null)
-    .map((t) => ({ ...t, created_at: t.created_at ?? "" }));
+  const playlistTracks: PlaylistTrack[] = (playlistTrackRows ?? [])
+    .map((r) => r.track as unknown as PlaylistTrack | null)
+    .filter((t): t is PlaylistTrack => t != null);
 
   // user's own tracks (to pick from when adding)
   const { data: myTracks } = await supabase
