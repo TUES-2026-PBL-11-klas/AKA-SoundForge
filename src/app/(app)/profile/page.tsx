@@ -24,16 +24,25 @@ export default async function ProfilePage() {
     .eq("creator_id", user.id)
     .order("created_at", { ascending: false });
 
+  type LikedTrack = {
+    id: string;
+    prompt: string;
+    genre: string | null;
+    mood: string | null;
+    audio_url: string;
+    cover_url: string | null;
+    created_at: string;
+  };
+
   const { data: likedRows } = await supabase
     .from("likes")
     .select("track:tracks(id, prompt, genre, mood, audio_url, cover_url, created_at)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  const likedTracks = (likedRows ?? [])
-    .map((r) => r.track)
-    .filter((t): t is NonNullable<typeof t> => t != null)
-    .map((t) => ({ ...t, created_at: t.created_at ?? "" }));
+  const likedTracks: LikedTrack[] = (likedRows ?? [])
+    .map((r) => r.track as unknown as LikedTrack | null)
+    .filter((t): t is LikedTrack => t != null);
 
   const likedIds = likedTracks.map((t) => t.id);
 
